@@ -56,7 +56,7 @@ public final class Conversation: @unchecked Sendable {
 			default: return nil
 		} }
 	}
-
+ 
 	private init(client: RealtimeAPI) {
 		self.client = client
 		(errors, errorStream) = AsyncStream.makeStream(of: ServerError.self)
@@ -185,10 +185,15 @@ public extension Conversation {
 		if !handlingVoice { try startHandlingVoice() }
 
 		Task.detached { [audioEngine] in
-			audioEngine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: audioEngine.inputNode.outputFormat(forBus: 0)) { [weak self] buffer, _ in
-				self?.processAudioBufferFromUser(buffer: buffer)
-			}
-		}
+	        // Remove existing taps before installing
+	        audioEngine.inputNode.removeTap(onBus: 0)
+
+	        let inputFormat = audioEngine.inputNode.outputFormat(forBus: 0)
+
+	        audioEngine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, _ in
+	            self?.processAudioBufferFromUser(buffer: buffer)
+	        }
+	    }
 
 		isListening = true
 	}
